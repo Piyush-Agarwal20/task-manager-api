@@ -8,7 +8,7 @@ const mongoClient = mongodb.MongoClient;
 const url = "mongodb://localhost:27017";
 const connectdb = "taskmanager";
 
-console.log(new ObjectID());
+// console.log(new ObjectID());
 
 mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
     if(err){
@@ -18,18 +18,25 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
     console.log("db connected succesfully");
 
     const db = client.db(connectdb);
-
-    db.collection("users").find({age:{$lte:23}}).toArray((err,result)=>{
-        if(err){
-            console.log("there was err while finding this data");
-            return;
+    let id = new ObjectID("64649c734ec90398b53cc733");
+    db.collection("users")
+    .updateOne({
+        _id:id
+    },{
+        $set:{
+            name:"takla",
+            age:45
         }
-        console.log(result);
+    }).then(i=>{
+        console.log(i);
+    }).catch(err=>{
+        console.log("there was error");
+    })
+    .finally(()=>{
         client.close();
-    });
+    })
+
 })
-
-
 
 
 
