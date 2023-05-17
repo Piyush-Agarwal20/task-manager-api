@@ -16,18 +16,9 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
 
     const db = client.db(connectdb);
 
-    db.collection('tasks').insertMany([
-        {
-            name:"piyush",
-            age:23,
-        },
-        {
-            name:"raj",
-            age:12,
-        }
-    ],(err,result)=>{
+    db.collection("users").findOne({age:23},(err,result)=>{
         if(err){
-            console.log("we were not able to insert data in db");
+            console.log("there was err while finding this data");
             return;
         }
         console.log(result);
