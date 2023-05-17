@@ -19,8 +19,8 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
 
     const db = client.db(connectdb);
     db.collection("users")
-    .deleteOne({
-        age:{$gte:80}
+    .deleteMany({
+        $and:[{name:"raj"},{age:{$gte:10}}]
     }).then(i=>{
         console.log(i);
     }).catch(err=>{
