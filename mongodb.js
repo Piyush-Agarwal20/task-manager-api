@@ -2,10 +2,13 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 const mongodb = require('mongodb-legacy');
+const {ObjectID} =  require("mongodb");
 const mongoClient = mongodb.MongoClient;
 
 const url = "mongodb://localhost:27017";
 const connectdb = "taskmanager";
+
+console.log(new ObjectID());
 
 mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
     if(err){
@@ -16,14 +19,14 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
 
     const db = client.db(connectdb);
 
-    db.collection("users").findOne({age:23},(err,result)=>{
+    db.collection("users").find({age:{$lte:23}}).toArray((err,result)=>{
         if(err){
             console.log("there was err while finding this data");
             return;
         }
         console.log(result);
         client.close();
-    })
+    });
 })
 
 
