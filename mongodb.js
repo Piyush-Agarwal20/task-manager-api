@@ -18,14 +18,12 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
     console.log("db connected succesfully");
 
     const db = client.db(connectdb);
-    let id = new ObjectID("64649c734ec90398b53cc733");
     db.collection("users")
-    .updateOne({
-        _id:id
+    .updateMany({
+        age:{$gte:23}
     },{
-        $set:{
-            name:"takla",
-            age:45
+        $inc:{
+            age:-10
         }
     }).then(i=>{
         console.log(i);
