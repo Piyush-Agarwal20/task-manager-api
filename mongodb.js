@@ -19,12 +19,8 @@ mongoClient.connect(url,{useNewUrlParser:true},(err,client)=>{
 
     const db = client.db(connectdb);
     db.collection("users")
-    .updateMany({
-        age:{$gte:23}
-    },{
-        $inc:{
-            age:-10
-        }
+    .deleteOne({
+        age:{$gte:80}
     }).then(i=>{
         console.log(i);
     }).catch(err=>{
