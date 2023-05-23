@@ -3,6 +3,7 @@ const require = createRequire(import.meta.url);
 import { filterrequest } from "../middleware/foruser.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { userModel, validateDocument } from "../models/user.js";
+import { taskModel } from "../models/task.js";
 
 const express = require("express");
 const router = express.Router();
@@ -49,7 +50,7 @@ router.post("/logoutAll",authMiddleware,async (req,res)=>{
 
 
 
-//===============for creating user ===================================
+//======================== for creating user ===================================
 router.post("/",async (req,res)=>{
     try {
         const result = validateDocument(req.body);
@@ -73,50 +74,33 @@ router.get("/me",authMiddleware,async(req,res)=>{
     res.status(200).send(req.user);
 });
 
-router.get("/:id",async(req,res)=>{
-    const _id = req.params.id;
-    try {
-        let user = await userModel.findById(_id);
-        // console.log(user);
-        if(!user){
-            res.status(404).send({error:"no user was found with this id."});
-            return;
-        }    
-        res.status(200).send(user);
-    } catch (error) {
-        res.status(500).json({error:"There was error while connecting to db."});
-    }
-})
 
 //==================For updating ======================================
 
 
-router.patch("/:id",async(req,res)=>{
-    const _id = req.params.id;
+router.patch("/me",authMiddleware,async(req,res)=>{
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ["name","email","password"];
+    const isValidOperation = updates.every(i=>allowedUpdates.includes(i));
+
+    if(!isValidOperation){
+        res.status(400).send({error:"Invalid updates !"});
+        return;
+    }
     try {
-        const document = await userModel.findById(_id);
-        if (!document) {
-            res.status(404).send({error:"no user was found with this id."});
-            return;
-        }
         if(typeof req.body.name === "number"){
             res.status(400).send({error:"name cannot be number"});
             return;
         }
-
-        // let updatedDocument = await userModel.updateOne({_id:document._id},req.body,{new:true,runValidators:true});
-        // updatedDocument = await userModel.findById(_id);
-
         Object.keys(req.body).forEach((i)=>{
-            if(document[i]){
-                document[i] = req.body[i];
+            if(req.user[i]){
+                req.user[i] = req.body[i];
             }
-        })
-        await document.save();
-        res.status(200).send(document);
+        });
+        await req.user.save();
+        res.status(200).send(req.user);
     } 
     catch (error) {
-        // console.log(error);
         res.status(400).json({error:"There was error while updating process"});
       }
 });
@@ -124,16 +108,15 @@ router.patch("/:id",async(req,res)=>{
 
 //========================Deleting a user ============================
 
-router.delete('/:id',async(req,res)=>{
-    const _id = req.params.id;
+router.delete('/me',authMiddleware,async(req,res)=>{
+    let id = req.user._id;
     try {
-        let user = await userModel.findByIdAndDelete(_id);
-        if(!user){
-            res.status(404).send({error:"no user was found with the following id."});
-            return ;
-        }
-        res.status(200).send(user);
+        await req.user.deleteOne();
+        // for deleting all the task of particular user with the related id 
+        await taskModel.deleteMany({owner:id});
+        res.status(200).send(req.user);
     } catch (error) {
+        console.log(error);
         res.status(400).send({error:"there was an error during deleting process"});
     }
 })

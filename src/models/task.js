@@ -13,9 +13,14 @@ const taskSchema = new mongoose.Schema({
     completed:{
         type:Boolean,
         default:false
+    },
+    owner:{
+        type:mongoose.Schema.Types.ObjectId,
+        required:true,
+        ref:"user"
     }
 },
-{ strict: 'throw' },
+{ strict: 'throw',timestamps:true},
 );
 
 function validateDocument(document) {

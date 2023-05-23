@@ -3,6 +3,8 @@ const require = createRequire(import.meta.url);
 const Joi = require("joi");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
+import { taskModel } from "./task.js";
+
 
 const mongoose = require("mongoose");
 const validator = require("validator");
@@ -54,8 +56,14 @@ const userSchema = new mongoose.Schema({
         }
     }]
 },
-{ strict: 'throw' },
+{ strict: 'throw',timestamps:true},
 )
+
+userSchema.virtual("tasks",{
+    ref:'task',
+    localField:'_id',
+    foreignField:'owner',
+})
 
 function validateDocument(document) {
     const schema = Joi.object({
@@ -65,6 +73,7 @@ function validateDocument(document) {
     });
     return schema.validate(document);
 }
+
 
 userSchema.methods.toJSON = function(){
     const user = this;
@@ -95,7 +104,9 @@ userSchema.statics.findByCredentials = async (email,password)=>{
     return user;
 }
 
-userSchema.pre('save', async function(next) {
+
+
+userSchema.pre('save',async function(next) {
     const user = this;
     try {
     //   await user.validate();

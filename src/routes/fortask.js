@@ -2,24 +2,21 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 import { taskModel,validateDocument} from "../models/task.js";
 import { filterrequest} from "../middleware/foruser.js";
-
+import { authMiddleware } from "../middleware/auth.js";
 const express = require("express");
 const router = express.Router(filterrequest);
 
 router.use(filterrequest)
 
 //================== for posting task ============================
-router.post("/",async (req,res)=>{
+router.post("/",authMiddleware,async (req,res)=>{
+    const data = new taskModel({
+        ...req.body,
+        owner:req.user._id,
+    });
     try {
-        const result = validateDocument(req.body);
-        if(result.error){
-            res.status(400).json({error:"the body does not match schema defined for db"});
-            return;
-        }
-        const data = new taskModel(result.value);
         await data.save();
         res.status(201).json(data);
-    
     } catch (error) {
         res.status(400).json({error:"there was error while registering data."})
     }
@@ -27,26 +24,41 @@ router.post("/",async (req,res)=>{
 
 
 //===========================for getting task=======================
-router.get("/",async(req,res)=>{
+router.get("/",authMiddleware,async(req,res)=>{
+    const match = {};
+
+    if(req.query.completed){
+        match.completed = req.query.completed ==="true";
+    }
     try {
-        const users = await taskModel.find({});
-        res.status(200).json(users);
+        // const users = await taskModel.find({owner:req.user._id});
+        await req.user.populate({
+            path:'tasks',
+            match,
+            options:{
+                limit : parseInt(req.query.limit),
+                skip: parseInt(req.query.skip)
+            }
+        });
+        res.status(200).json(req.user.tasks);
     } catch (error) {
+        console.log(error);
         res.status(500).json({error:"there was error file fetching users."})
     }
 })
 
-router.get("/:id",async(req,res)=>{
+router.get("/:id",authMiddleware ,async(req,res)=>{
     const _id = req.params.id;
     try {
-        let user = await taskModel.findById(_id);
+        let user = await taskModel.findOne({_id,owner:req.user._id});
         // console.log(user);
         if(!user){
-            res.status(404).send({error:"no user was found with this id."});
+            res.status(404).send({error:"no task was found with this id."});
             return;
         }    
         res.status(200).send(user);
     } catch (error) {
+        console.log(error);
         res.status(500).json({error:"There was error while connecting to db."});
     }
 })
@@ -54,17 +66,25 @@ router.get("/:id",async(req,res)=>{
 //==================For updating ======================================
 
 
-router.patch("/:id",async(req,res)=>{
+router.patch("/:id",authMiddleware,async(req,res)=>{
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ["description","completed"];
+    const isValidOperation = updates.every(i=>allowedUpdates.includes(i));
+
+    if(!isValidOperation){
+        res.status(400).send({error:"Invalid updates !"});
+        return;
+    }
     const _id = req.params.id;
     try {
-        const document = await taskModel.findById(_id);
-        if (!document) {
-            res.status(404).send({error:"no user was found with this id."});
+        const task = await taskModel.findOne({_id,owner:req.user._id});
+        if (!task) {
+            res.status(404).send({error:"no task was found with this id."});
             return;
         }
-        let updatedDocument = await taskModel.updateOne({_id:document._id},req.body,{new:true,runValidators:true});
-        updatedDocument = await taskModel.findById(_id);
-        res.status(200).send(updatedDocument);
+        updates.forEach(update=>task[update]=req.body[update]);
+        await task.save();
+        res.status(200).send(task);
     } 
     catch (error) {
         // console.log(error);
@@ -74,12 +94,12 @@ router.patch("/:id",async(req,res)=>{
 
 //============================deleting a task==============================
 
-router.delete('/:id',async(req,res)=>{
+router.delete('/:id',authMiddleware,async(req,res)=>{
     const _id = req.params.id;
     try {
-        let user = await taskModel.findByIdAndDelete(_id);
+        let user = await taskModel.findOneAndDelete({_id,owner:req.user._id});
         if(!user){
-            res.status(404).send({error:"no user was found with the following id."});
+            res.status(404).send({error:"no task was found with the following id."});
             return ;
         }
         res.status(200).send(user);
