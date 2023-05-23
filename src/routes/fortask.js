@@ -26,9 +26,13 @@ router.post("/",authMiddleware,async (req,res)=>{
 //===========================for getting task=======================
 router.get("/",authMiddleware,async(req,res)=>{
     const match = {};
-
+    const sort = {};
     if(req.query.completed){
         match.completed = req.query.completed ==="true";
+    }
+    if(req.query.sortBy){
+        let sortObj = req.query.sortBy.split(":");
+        sort[sortObj[0]] = sortObj[1]=== "desc"?-1:1;
     }
     try {
         // const users = await taskModel.find({owner:req.user._id});
@@ -37,7 +41,8 @@ router.get("/",authMiddleware,async(req,res)=>{
             match,
             options:{
                 limit : parseInt(req.query.limit),
-                skip: parseInt(req.query.skip)
+                skip: parseInt(req.query.skip),
+                sort
             }
         });
         res.status(200).json(req.user.tasks);
