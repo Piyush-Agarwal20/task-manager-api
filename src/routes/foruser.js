@@ -4,12 +4,26 @@ import { filterrequest } from "../middleware/foruser.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { userModel, validateDocument } from "../models/user.js";
 import { taskModel } from "../models/task.js";
+const multer = require('multer');
+const sharp = require('sharp');
+
+const upload = multer({
+    limits:{
+        fileSize:1000000
+    },
+    fileFilter(req,file,cb){
+        if(!file.originalname.match(/\.(jpg|png|jpeg)$/)){
+            cb(new Error("Please upload image!"))
+        }
+        cb(undefined,true);
+    }
+})
 
 const express = require("express");
 const router = express.Router();
 
-// router.use(express.json())
-router.use(filterrequest);
+router.use(express.json())
+// router.use(filterrequest);
 
 //===================for Authenticating User================================
 
@@ -48,7 +62,46 @@ router.post("/logoutAll",authMiddleware,async (req,res)=>{
     }
 })
 
+//=========================for uploading pictures================================
+router.post("/avatar",authMiddleware,upload.single("avatar"),async(req,res)=>{
+    try {
+        let buffer = await sharp(req.file.buffer).resize({width:250,height:250}).png().toBuffer();
+        req.user.avatar = buffer;
+        await req.user.save({ validateBeforeSave: false });
+        res.status(200).send(req.user);
+    } catch (error) {
+        console.log(error);
+        res.status(400).send({error:"error while uploading process"});
+    }
+},(error,req,res,next)=>{
+    res.status(400).send({error:error.message});
+});
 
+router.delete("/avatar",authMiddleware,async(req,res)=>{
+    try {
+        req.user.avatar = undefined;
+        await req.user.save();
+        res.status(200).send("profile pic was deleted successfully");
+    } catch (error) {
+        res.status(400).send({error:"there was error while deleting profile"});
+    }
+})
+
+
+router.get("/avatar/:id",async(req,res)=>{
+    console.log(req.params.id);
+    try {
+        let user = await userModel.findById(req.params.id);
+        if(!user || !user.avatar){
+            throw new Error();
+        }
+        res.set("Content-Type","image/jpg")
+        res.send(user.avatar);
+    } catch (error) {
+        console.log(error);
+        res.status(400).send("there was some error while recieving profile pic");
+    }
+});
 
 //======================== for creating user ===================================
 router.post("/",async (req,res)=>{
@@ -60,10 +113,12 @@ router.post("/",async (req,res)=>{
         }
         const data = new userModel(result.value);
         await data.save();
+        // sendWelcomeEmail(data.email,data.name);
         const token = await data.generateAuthToken();
         res.status(201).json({data,token});
     
     } catch (error) {
+        console.log(error);
         res.status(400).json({error:"there was error while registering data."})
     }
 })

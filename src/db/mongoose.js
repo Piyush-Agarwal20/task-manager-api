@@ -2,7 +2,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const mongoose = require('mongoose');
 
-let dbUrl = "mongodb://localhost/task-manager-api";
+let dbUrl = process.env.MONGODB_URL;
 
 const connectToMongo = ()=>{
     mongoose.connect(dbUrl,{
