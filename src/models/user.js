@@ -39,15 +39,6 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
         trim:true,
-        validate(value){
-            if(value.length<6){
-                throw new Error("password should be greater than 6");
-            }
-            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
-            if(!passwordRegex.test(value)){
-                throw new Error("password does not match criteria provided")
-            }
-        }
     },
     tokens:[{
         token:{
@@ -77,6 +68,14 @@ function validateDocument(document) {
     return schema.validate(document);
 }
 
+userSchema.methods.validatePassword = function () {
+    const user = this;
+    // console.log(user);
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
+    if(!passwordRegex.test(this.password)){
+        throw new Error("password did'nt satisfy criteria");
+    }
+};
 
 userSchema.methods.toJSON = function(){
     const user = this;
@@ -127,5 +126,7 @@ const userModel = new mongoose.model("user",userSchema);
 
 // so now this is working and will not create similar email address 
 // userModel.createIndexes({ email: 1 },{unique:1});
+
+
 
 export {userModel,validateDocument};

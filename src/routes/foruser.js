@@ -70,7 +70,7 @@ router.post("/avatar",authMiddleware,upload.single("avatar"),async(req,res)=>{
         await req.user.save({ validateBeforeSave: false });
         res.status(200).send(req.user);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(400).send({error:"error while uploading process"});
     }
 },(error,req,res,next)=>{
@@ -89,7 +89,7 @@ router.delete("/avatar",authMiddleware,async(req,res)=>{
 
 
 router.get("/avatar/:id",async(req,res)=>{
-    console.log(req.params.id);
+    // console.log(req.params.id);
     try {
         let user = await userModel.findById(req.params.id);
         if(!user || !user.avatar){
@@ -98,7 +98,7 @@ router.get("/avatar/:id",async(req,res)=>{
         res.set("Content-Type","image/jpg")
         res.send(user.avatar);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(400).send("there was some error while recieving profile pic");
     }
 });
@@ -112,13 +112,14 @@ router.post("/",async (req,res)=>{
             return;
         }
         const data = new userModel(result.value);
+        await data.validatePassword();
         await data.save();
         // sendWelcomeEmail(data.email,data.name);
         const token = await data.generateAuthToken();
         res.status(201).json({data,token});
     
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(400).json({error:"there was error while registering data."})
     }
 })
@@ -152,10 +153,14 @@ router.patch("/me",authMiddleware,async(req,res)=>{
                 req.user[i] = req.body[i];
             }
         });
+        if(req.body.password){
+            await req.user.validatePassword();
+        }
         await req.user.save();
         res.status(200).send(req.user);
     } 
     catch (error) {
+        // console.log(error)
         res.status(400).json({error:"There was error while updating process"});
       }
 });
@@ -171,7 +176,7 @@ router.delete('/me',authMiddleware,async(req,res)=>{
         await taskModel.deleteMany({owner:id});
         res.status(200).send(req.user);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(400).send({error:"there was an error during deleting process"});
     }
 })

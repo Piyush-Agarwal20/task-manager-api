@@ -47,7 +47,7 @@ router.get("/",authMiddleware,async(req,res)=>{
         });
         res.status(200).json(req.user.tasks);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({error:"there was error file fetching users."})
     }
 })
@@ -63,7 +63,7 @@ router.get("/:id",authMiddleware ,async(req,res)=>{
         }    
         res.status(200).send(user);
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({error:"There was error while connecting to db."});
     }
 })

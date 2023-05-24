@@ -13,8 +13,6 @@ connectToMongo();
 
 const Port = process.env.PORT||3000;
 
-console.log(process.env.PORT);
-
 app.use("/api/users",routerUser);
 app.use("/api/tasks",routerTask);
 
